@@ -9,7 +9,8 @@ env:
   REGISTRY: ghcr.io
   # Converts repository owner to lowercase for registry path compatibility
   IMAGE_NAME: ${{ github.repository_owner }}/gitops-demo-app
-  INFRA_REPO: ${{ github.repository_owner }}/gitops-infra-repo
+  # Target infrastructure repository name
+  INFRA_REPO: ${{ github.repository_owner }}/gitops-demo-infra
 
 jobs:
   test:
@@ -51,7 +52,7 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./app-repo
+          context: .
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
