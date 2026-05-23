@@ -82,5 +82,10 @@ jobs:
           git config --global user.name "GitHub Actions CI"
           git config --global user.email "actions@github.com"
           git add helm/app-chart/values.yaml
-          git commit -m "chore(infra): update app image tag to v-${{ github.sha }} [skip ci]"
-          git push origin main
+          # Only commit and push if values.yaml actually changed
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(infra): update app image tag to v-${{ github.sha }} [skip ci]"
+            git push origin main
+          else
+            echo "No changes detected, skipping commit."
+          fi
