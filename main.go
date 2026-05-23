@@ -99,7 +99,7 @@ func main() {
 
 		hostname, _ := os.Hostname()
 		resp := Response{
-			Message:   "Welcome to the GitOps Demo App! This is an automated rolling update.",
+			Message:   "Welcome to the GitOps Demo App! This is an automated rolling updatess.",
 			Count:     count,
 			Version:   version,
 			Hostname:  hostname,
