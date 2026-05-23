@@ -72,8 +72,8 @@ jobs:
       - name: Update Image Tag in Helm values.yaml
         run: |
           cd infra-repo
-          # Dynamically update the Helm values.yaml image tag with the new Commit SHA
-          sed -i 's/tag: .*/tag: "v-${{ github.sha }}"/' helm/app-chart/values.yaml
+          # Specific sed: find repository: gitops-demo-app, go to next line, and replace the tag
+          sed -i '/repository: gitops-demo-app/{n;s/tag: .*/tag: "v-${{ github.sha }}"/}' helm/app-chart/values.yaml
 
       - name: Commit and Push Changes to Infra Repo
         run: |
