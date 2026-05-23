@@ -21,16 +21,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          go-version: '1.22'
-
-      - name: Install dependencies
-        run: go mod tidy
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
 
       - name: Run Tests
-        run: go test -v ./...
+        run: mvn test
 
   build-and-push:
     name: Build & Push Image, Update GitOps Config

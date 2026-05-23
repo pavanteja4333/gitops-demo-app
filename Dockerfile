@@ -1,28 +1,26 @@
-# Stage 1: Build the static Go binary
-FROM golang:1.22-alpine AS builder
+# Stage 1: Build the Java Spring Boot application
+FROM maven:3.9.6-eclipse-temurin-17-alpine AS builder
 
 WORKDIR /app
 
-# Copy source code and download dependencies
-COPY . .
-RUN go mod tidy
+# Copy pom.xml and download dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Build statically
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+# Copy source code and build the package
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Stage 2: Runtime image using distroless
-FROM gcr.io/distroless/static-debian12
+# Stage 2: Runtime image using secure distroless Java
+FROM gcr.io/distroless/java17-debian12
 
-WORKDIR /
+WORKDIR /app
 
-# Copy the compiled binary from the builder stage
-COPY --from=builder /app/main /main
+# Copy the compiled JAR from the builder stage
+COPY --from=builder /app/target/gitops-demo-app-1.0.0.jar app.jar
 
 # Expose the API port
 EXPOSE 8080
 
-# Run as nonroot user
-USER nonroot:nonroot
-
-# Run the binary
-ENTRYPOINT ["/main"]
+# Run the JAR
+ENTRYPOINT ["java", "-jar", "app.jar"]

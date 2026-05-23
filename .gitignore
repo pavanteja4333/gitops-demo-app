@@ -1,15 +1,17 @@
-# Go local binaries and test builds
-/main
-/app-repo
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
+# Maven build output
+/target/
+*.releaseBackup
 
-# Editor and Workspace folders
+# Log files
+*.log
+
+# Mobile Tools/Devices
+.env.test.local
+.env.production.local
+.env.local
+.env.development.local
+
+# IDEs and editors
 .idea/
 .vscode/
 *.suo
