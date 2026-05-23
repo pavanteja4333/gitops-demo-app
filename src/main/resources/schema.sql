@@ -2,3 +2,7 @@ CREATE TABLE IF NOT EXISTS visits (
     id SERIAL PRIMARY KEY,
     visited_at TIMESTAMP NOT NULL
 );
+
+-- Add columns if they do not exist
+ALTER TABLE visits ADD COLUMN IF NOT EXISTS hostname VARCHAR(255) DEFAULT 'unknown';
+ALTER TABLE visits ADD COLUMN IF NOT EXISTS version VARCHAR(50) DEFAULT 'v1.0.0';

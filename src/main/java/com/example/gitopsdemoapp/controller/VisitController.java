@@ -5,12 +5,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -24,30 +26,58 @@ public class VisitController {
         this.appVersion = appVersion;
     }
 
-    @GetMapping("/")
-    public ResponseEntity<Map<String, Object>> getVisit() {
+    private String getLocalHostname() {
         try {
-            // Record visit
-            jdbcTemplate.update("INSERT INTO visits (visited_at) VALUES (?)", LocalDateTime.now());
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            return "unknown";
+        }
+    }
 
-            // Count visits
+    @GetMapping("/api/visits")
+    public ResponseEntity<Map<String, Object>> getVisitsData() {
+        try {
+            // Count total visits
             Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM visits", Integer.class);
 
-            String hostname;
-            try {
-                hostname = InetAddress.getLocalHost().getHostName();
-            } catch (UnknownHostException e) {
-                hostname = "unknown";
-            }
+            // Fetch last 10 visits
+            List<Map<String, Object>> recentVisits = jdbcTemplate.query(
+                "SELECT id, visited_at, hostname, version FROM visits ORDER BY id DESC LIMIT 10",
+                (rs, rowNum) -> {
+                    Map<String, Object> visit = new HashMap<>();
+                    visit.put("id", rs.getLong("id"));
+                    visit.put("visited_at", rs.getTimestamp("visited_at").toLocalDateTime().toString());
+                    visit.put("hostname", rs.getString("hostname"));
+                    visit.put("version", rs.getString("version"));
+                    return visit;
+                }
+            );
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Welcome to the GitOps Demo App! This is an automated rolling update.");
             response.put("visit_count", count != null ? count : 0);
+            response.put("hostname", getLocalHostname());
             response.put("version", appVersion);
-            response.put("hostname", hostname);
-            response.put("timestamp", LocalDateTime.now().toString());
+            response.put("db_status", "healthy");
+            response.put("recent_visits", recentVisits);
 
             return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("error", "Failed to retrieve visit data: " + e.getMessage());
+            errResponse.put("db_status", "unhealthy");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errResponse);
+        }
+    }
+
+    @PostMapping("/api/visits")
+    public ResponseEntity<Map<String, Object>> recordVisit() {
+        try {
+            String hostname = getLocalHostname();
+            // Record visit
+            jdbcTemplate.update("INSERT INTO visits (visited_at, hostname, version) VALUES (?, ?, ?)",
+                LocalDateTime.now(), hostname, appVersion);
+
+            return getVisitsData();
         } catch (Exception e) {
             Map<String, Object> errResponse = new HashMap<>();
             errResponse.put("error", "Failed to record visit: " + e.getMessage());
