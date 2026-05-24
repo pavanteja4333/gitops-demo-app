@@ -10,7 +10,80 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div class="dashboard-wrapper">
+    <!-- Custom Toast Notification System -->
+    <div id="toast-container"></div>
+
+    <!-- Screen 1: Sleek Authentication Wrapper -->
+    <div class="auth-wrapper" id="auth-container">
+        <div class="auth-card">
+            <!-- Login Panel -->
+            <div class="form-container" id="login-container">
+                <div class="auth-header">
+                    <div class="logo-container auth-logo">
+                        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Welcome Back</h2>
+                    <p class="auth-subtitle">Sign in to GitOps Demo Console</p>
+                </div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" placeholder="Enter username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter password" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full btn-auth" id="btn-login-submit">
+                        Sign In
+                    </button>
+                </form>
+                <div class="auth-footer">
+                    <p>Don't have an account? <a href="#" id="to-register">Register here</a></p>
+                </div>
+            </div>
+
+            <!-- Registration Panel -->
+            <div class="form-container hidden" id="register-container">
+                <div class="auth-header">
+                    <div class="logo-container auth-logo">
+                        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h2>Create Account</h2>
+                    <p class="auth-subtitle">Register user in PostgreSQL database</p>
+                </div>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" placeholder="Enter username" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" placeholder="Min. 6 characters" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm-password">Confirm Password</label>
+                        <input type="password" id="register-confirm-password" placeholder="Repeat password" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full btn-auth" id="btn-register-submit">
+                        Register Account
+                    </button>
+                </form>
+                <div class="auth-footer">
+                    <p>Already have an account? <a href="#" id="to-login">Sign in here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Sleek Dashboard Wrapper -->
+    <div class="dashboard-wrapper hidden" id="dashboard-container">
         <header class="dashboard-header">
             <div class="brand">
                 <div class="logo-container">
@@ -20,13 +93,19 @@
                     </svg>
                 </div>
                 <div class="brand-text">
-                    <h1>GitOps Demo Console</h1>
+                    <h1 id="brand-title">Welcome to Pavan's Demo App, Guest!</h1>
                     <p class="subtitle">Real-time Java Spring Boot Pipeline Status</p>
                 </div>
             </div>
-            <div class="status-indicator">
-                <span class="pulse-dot"></span>
-                <span class="status-text">Connected to Kubernetes</span>
+            <div class="header-actions">
+                <div class="status-indicator">
+                    <span class="pulse-dot"></span>
+                    <span class="status-text">Connected</span>
+                </div>
+                <button class="btn btn-secondary btn-logout" id="btn-logout">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                    Logout
+                </button>
             </div>
         </header>
 

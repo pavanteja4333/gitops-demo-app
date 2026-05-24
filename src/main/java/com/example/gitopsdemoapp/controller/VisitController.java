@@ -1,5 +1,6 @@
 package com.example.gitopsdemoapp.controller;
 
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,14 @@ public class VisitController {
     }
 
     @GetMapping("/api/visits")
-    public ResponseEntity<Map<String, Object>> getVisitsData() {
+    public ResponseEntity<Map<String, Object>> getVisitsData(HttpSession session) {
+        String username = (String) session.getAttribute("user");
+        if (username == null) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("error", "Unauthorized. Please log in first.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errResponse);
+        }
+
         try {
             // Count total visits
             Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM visits", Integer.class);
@@ -59,6 +67,7 @@ public class VisitController {
             response.put("version", appVersion);
             response.put("db_status", "healthy");
             response.put("recent_visits", recentVisits);
+            response.put("username", username); // Include username in dashboard data
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -70,14 +79,21 @@ public class VisitController {
     }
 
     @PostMapping("/api/visits")
-    public ResponseEntity<Map<String, Object>> recordVisit() {
+    public ResponseEntity<Map<String, Object>> recordVisit(HttpSession session) {
+        String username = (String) session.getAttribute("user");
+        if (username == null) {
+            Map<String, Object> errResponse = new HashMap<>();
+            errResponse.put("error", "Unauthorized. Please log in first.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errResponse);
+        }
+
         try {
             String hostname = getLocalHostname();
             // Record visit
             jdbcTemplate.update("INSERT INTO visits (visited_at, hostname, version) VALUES (?, ?, ?)",
                 LocalDateTime.now(), hostname, appVersion);
 
-            return getVisitsData();
+            return getVisitsData(session);
         } catch (Exception e) {
             Map<String, Object> errResponse = new HashMap<>();
             errResponse.put("error", "Failed to record visit: " + e.getMessage());
