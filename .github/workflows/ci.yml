@@ -32,7 +32,7 @@ jobs:
         run: mvn test
 
   build-and-push:
-    name: Build & Push Image, Update GitOps Config
+    name: Build & Push Image
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -61,30 +61,100 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v-${{ github.sha }}
 
+  deploy-dev:
+    name: Deploy to Dev
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout Infra Repository
         uses: actions/checkout@v4
         with:
           repository: ${{ env.INFRA_REPO }}
-          # Requires a GitHub Personal Access Token (PAT) with write access to the infra repo
           token: ${{ secrets.GITOPS_INFRA_PAT }}
           path: infra-repo
 
-      - name: Update Image Tag in Helm values.yaml
+      - name: Update Image Tag in Helm values-dev.yaml
         run: |
           cd infra-repo
-          # Specific sed: find repository ending with gitops-demo-app, go to next line, and replace the tag
-          sed -i '/repository: .*gitops-demo-app/{n;s/tag: .*/tag: "v-${{ github.sha }}"/}' helm/app-chart/values.yaml
+          sed -i 's/tag: .*/tag: "v-${{ github.sha }}"/' helm/app-chart/values-dev.yaml
 
       - name: Commit and Push Changes to Infra Repo
         run: |
           cd infra-repo
           git config --global user.name "GitHub Actions CI"
           git config --global user.email "actions@github.com"
-          git add helm/app-chart/values.yaml
-          # Only commit and push if values.yaml actually changed
+          git add helm/app-chart/values-dev.yaml
           if ! git diff --cached --quiet; then
-            git commit -m "chore(infra): update app image tag to v-${{ github.sha }} [skip ci]"
+            git commit -m "chore(dev): deploy v-${{ github.sha }} to dev [skip ci]"
+            git pull --rebase origin main
             git push origin main
           else
             echo "No changes detected, skipping commit."
           fi
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Infra Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.INFRA_REPO }}
+          token: ${{ secrets.GITOPS_INFRA_PAT }}
+          path: infra-repo
+
+      - name: Update Image Tag in Helm values-staging.yaml
+        run: |
+          cd infra-repo
+          sed -i 's/tag: .*/tag: "v-${{ github.sha }}"/' helm/app-chart/values-staging.yaml
+
+      - name: Commit and Push Changes to Infra Repo
+        run: |
+          cd infra-repo
+          git config --global user.name "GitHub Actions CI"
+          git config --global user.email "actions@github.com"
+          git add helm/app-chart/values-staging.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(staging): promote v-${{ github.sha }} to staging [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+          else
+            echo "No changes detected, skipping commit."
+          fi
+
+  open-prod-pr:
+    name: Open Production Promotion PR
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Infra Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.INFRA_REPO }}
+          token: ${{ secrets.GITOPS_INFRA_PAT }}
+          path: infra-repo
+
+      - name: Create Production Promotion PR
+        env:
+          GH_TOKEN: ${{ secrets.GITOPS_INFRA_PAT }}
+        run: |
+          cd infra-repo
+          BRANCH_NAME="promote-to-prod-${{ github.sha }}"
+          git checkout -b $BRANCH_NAME
+          
+          sed -i 's/tag: .*/tag: "v-${{ github.sha }}"/' helm/app-chart/values-prod.yaml
+          
+          git config --global user.name "GitHub Actions CI"
+          git config --global user.email "actions@github.com"
+          git add helm/app-chart/values-prod.yaml
+          
+          git commit -m "chore(prod): promote app to v-${{ github.sha }}"
+          git push origin $BRANCH_NAME
+          
+          gh pr create \
+            --title "🚀 Promote v-${{ github.sha }} to Production" \
+            --body "This PR promotes the application to version v-${{ github.sha }} in the Production environment. After merging this PR, manual sync in ArgoCD is required to rollout." \
+            --repo "${{ env.INFRA_REPO }}" \
+            --head "$BRANCH_NAME" \
+            --base "main"
